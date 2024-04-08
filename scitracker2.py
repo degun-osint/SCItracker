@@ -25,7 +25,7 @@ def display_menu():
     print(
         Fore.GREEN + "3 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (avec historique) 📚")
     print(
-        Fore.GREEN + "4 -" + Fore.WHITE + " Rechercher toutes les propriétés d'un SIREN (actuel et ancien propriétaire) 🏠")
+        Fore.GREEN + "4 -" + Fore.WHITE + " Rechercher toutes les anciennes propriétés d'un SIREN 🏠")
     print(Fore.RED + "5 - Quitter ❌" + Style.RESET_ALL)
 
 
