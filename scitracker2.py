@@ -56,18 +56,22 @@ def display_and_export_properties(conn, sirens, function_to_call):
     loading_thread = threading.Thread(target=searching, args=(stop_event,))
     loading_thread.start()
 
-    properties, column_names = function_to_call(conn, sirens)
+    result = function_to_call(conn, sirens)
 
     stop_event.set()  # Stoppe l'animation
     loading_thread.join()  # Attend que le thread de l'animation se termine
-    if properties:
-        display_properties(properties, column_names)
-        export_choice = input("Voulez-vous exporter ces résultats en CSV ? (Oui/Non) : ").lower()
-        if export_choice == 'oui':
-            filename = input(Fore.GREEN + "Entrez le nom du fichier à exporter :")
-            properties_to_csv(properties, column_names, filename=filename + ".csv")
+    if isinstance(result, str):
+        print(result)
     else:
-        print("Aucune donnée disponible pour les SIREN spécifiés.")
+        properties, column_names = result
+        if properties:
+            display_properties(properties, column_names)
+            export_choice = input("Voulez-vous exporter ces résultats en CSV ? (Oui/Non) : ").lower()
+            if export_choice == 'oui':
+                filename = input(Fore.GREEN + "Entrez le nom du fichier à exporter :")
+                properties_to_csv(properties, column_names, filename=filename + ".csv")
+        else:
+            print("Aucune donnée disponible pour les SIREN spécifiés.")
 
 
 def main():

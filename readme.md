@@ -17,3 +17,6 @@ Lancez le script via la commande
 Et choisissez l'option ``1`` pour initialiser la base de données. Cela peut prendre un certain temps, soyez patient.
 
 Suivez les instructions à l'écran pour faire vos recherches.
+
+## TODO
+ - Vérification des SIREN (format, espace, etc)
