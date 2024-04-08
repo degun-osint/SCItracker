@@ -9,7 +9,7 @@ def get_most_recent_year(conn):
     return cursor.fetchone()[0]
 
 
-def find_properties_by_siren(conn, sirens):
+def properties_simple(conn, sirens):
     year = get_most_recent_year(conn)
     cursor = conn.cursor()
     siren_placeholders = ', '.join(['?'] * len(sirens))
@@ -31,7 +31,7 @@ def find_properties_by_siren(conn, sirens):
 
 
 
-def find_properties_and_history_by_siren(conn, sirens):
+def properties_and_history(conn, sirens):
     cursor = conn.cursor()
     # Trouver l'année la plus récente pour les SIREN spécifiés
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
@@ -87,7 +87,7 @@ def find_properties_and_history_by_siren(conn, sirens):
     return properties_data, column_names
 
 
-def find_past_properties(conn, sirens):
+def past_properties(conn, sirens):
     cursor = conn.cursor()
     # Trouver l'année la plus récente dans la base de données
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
@@ -155,7 +155,7 @@ def find_past_properties(conn, sirens):
         return "Aucune donnée historique disponible pour les SIREN spécifiés"
 
 
-def export_properties_to_csv(properties, column_names, filename):
+def properties_to_csv(properties, column_names, filename):
     with open(filename, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(column_names)

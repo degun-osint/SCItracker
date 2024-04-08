@@ -2,11 +2,11 @@
 import sqlite3
 from modules.create_db import create_database
 from modules.import_data import import_data
-from modules.query_and_export import find_properties_by_siren, export_properties_to_csv, find_properties_and_history_by_siren, find_past_properties
+from modules.query_and_export import properties_simple, properties_to_csv, properties_and_history, past_properties
 from modules.layout import display_properties
 from colorama import Fore, Style
-
-from colorama import Fore, Style
+import threading
+import time
 
 
 def display_menu():
@@ -29,6 +29,20 @@ def display_menu():
     print(Fore.RED + "5 - Quitter ❌" + Style.RESET_ALL)
 
 
+def searching(stop_event):
+    """Affiche un message de chargement jusqu'à ce que stop_event soit défini."""
+    etats_oeil = [Fore.YELLOW + "🐵" + Style.RESET_ALL, Fore.YELLOW + "🙈" + Style.RESET_ALL]
+    idx_etat = 0
+    start_time = time.time()
+    while not stop_event.is_set():
+        print("\r" + Fore.YELLOW + "Recherche en cours " + etats_oeil[idx_etat], end="", flush=True)
+        idx_etat = (idx_etat + 1) % len(etats_oeil)
+        time.sleep(0.5)
+
+    end_time = time.time()
+    duree = end_time - start_time
+    print(Fore.GREEN + "\rRecherche terminée en {:.2f} secondes. 🤘".format(duree) + Style.RESET_ALL)
+
 def prompt_siren_input():
     """Demander à l'utilisateur d'entrer un ou plusieurs SIREN."""
     siren_input = input(Fore.CYAN + "Entrez un ou plusieurs N° SIREN séparés par une virgule : ")
@@ -37,13 +51,21 @@ def prompt_siren_input():
 
 def display_and_export_properties(conn, sirens, function_to_call):
     """Affiche et propose l'exportation des propriétés."""
+
+    stop_event = threading.Event()
+    loading_thread = threading.Thread(target=searching, args=(stop_event,))
+    loading_thread.start()
+
     properties, column_names = function_to_call(conn, sirens)
+
+    stop_event.set()  # Stoppe l'animation
+    loading_thread.join()  # Attend que le thread de l'animation se termine
     if properties:
         display_properties(properties, column_names)
         export_choice = input("Voulez-vous exporter ces résultats en CSV ? (Oui/Non) : ").lower()
         if export_choice == 'oui':
             filename = input(Fore.GREEN + "Entrez le nom du fichier à exporter :")
-            export_properties_to_csv(properties, column_names, filename=filename+".csv")
+            properties_to_csv(properties, column_names, filename=filename + ".csv")
     else:
         print("Aucune donnée disponible pour les SIREN spécifiés.")
 
@@ -63,11 +85,11 @@ def main():
             sirens = prompt_siren_input()
             with sqlite3.connect('cadastral_data.db') as conn:
                 if choice == '2':
-                    display_and_export_properties(conn, sirens, find_properties_by_siren)
+                    display_and_export_properties(conn, sirens, properties_simple)
                 elif choice == '3':
-                    display_and_export_properties(conn, sirens, find_properties_and_history_by_siren)
+                    display_and_export_properties(conn, sirens, properties_and_history)
                 elif choice == '4':
-                    display_and_export_properties(conn, sirens, find_past_properties)
+                    display_and_export_properties(conn, sirens, past_properties)
         elif choice == '5':
             print(Fore.GREEN + "Au revoir !" + Style.RESET_ALL)
             break
