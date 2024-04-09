@@ -80,11 +80,16 @@ def main():
         choice = input("Entrez votre choix (1-5) : ")
 
         if choice == '1':
-            print("Initialisation de la base de données...")
-            create_database()
-            print("Importation des données...")
-            data_directory = "DATA"
-            import_data(data_directory)
+            print(Fore.RED + "⚠️ ATTENTION ! Vous allez lancer l'initialisation de la base de données." + Style.RESET_ALL)
+            launch_init = input(Fore.RED + "Voulez vous continuer ? (oui/non) : " + Style.RESET_ALL)
+            if launch_init == "oui" :
+                print("Initialisation de la base de données...")
+                create_database()
+                print("Importation des données...")
+                data_directory = "DATA"
+                import_data(data_directory)
+            else :
+                pass
         elif choice in ['2', '3', '4']:
             sirens = prompt_siren_input()
             with sqlite3.connect('cadastral_data.db') as conn:

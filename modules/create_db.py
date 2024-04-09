@@ -2,6 +2,7 @@
 
 import sqlite3
 
+
 def create_database():
     # Connexion à la base de données SQLite
     conn = sqlite3.connect('cadastral_data.db')
@@ -43,6 +44,13 @@ def create_database():
         annee INTEGER,
         FOREIGN KEY(parcelle_id) REFERENCES parcelles(parcelle_id),
         FOREIGN KEY(proprietaire_id) REFERENCES proprietaires(proprietaire_id)
+    )
+    ''')
+
+    # Historique de fichiers déjà importés
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS fichiers_importes (
+        fichier_nom VARCHAR(255) PRIMARY KEY
     )
     ''')
 

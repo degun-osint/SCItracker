@@ -8,24 +8,34 @@ from tqdm import tqdm
 
 def import_data(data_directory):
     conn = sqlite3.connect('cadastral_data.db')
+    cursor = conn.cursor()
+    # Réglages d'optimisation
+    cursor.execute('PRAGMA synchronous = OFF')
+    cursor.execute('PRAGMA journal_mode = MEMORY')
+    cursor.execute('PRAGMA cache_size = -200000')  # Cache de 200 000 pages
+    cursor.execute('BEGIN TRANSACTION')
+
     for root, _, files in walk(data_directory):
         year = path.basename(root)
         if year.isdigit():  # Vérifier que le dossier est une année
-            # Filtrer les fichiers .txt
             txt_files = [file for file in files if file.endswith(".txt")]
             if not txt_files:
-                continue  # Passer à l'année suivante si aucun fichier .txt correspondant
+                continue
 
             print(f"Traitement des données pour l'année : {year}")
-            # tqdm est correctement initialisé avec la liste des fichiers .txt filtrés
             with tqdm(total=len(txt_files), desc="Fichiers traités", leave=True) as pbar:
                 for file in txt_files:
                     full_path = path.join(root, file)
-                    process_file(full_path, year, conn)  # Passer la connexion à la fonction
-                    pbar.update(1)  # Incrémenter la barre de progression après chaque fichier traité
+                    # Vérifier si le fichier a déjà été importé
+                    cursor.execute('SELECT fichier_nom FROM fichiers_importes WHERE fichier_nom = ?', (full_path,))
+                    if cursor.fetchone() is None:
+                        process_file(full_path, year, conn)
+                        # Enregistrer le fichier comme importé
+                        cursor.execute('INSERT INTO fichiers_importes (fichier_nom) VALUES (?)', (full_path,))
+                    pbar.update(1)
 
-    conn.commit()  # Valider les changements une fois tous les fichiers traités
-    conn.close()  # Fermer la connexion
+    conn.commit()
+    conn.close()
     print("Importation terminée avec succès.")
 
 
