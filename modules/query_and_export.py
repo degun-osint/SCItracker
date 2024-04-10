@@ -14,21 +14,27 @@ def properties_simple(conn, sirens):
     cursor = conn.cursor()
     siren_placeholders = ', '.join(['?'] * len(sirens))
     query = f'''
-    SELECT p.departement, p.nom_commune, p.section, p.numero_plan, p.numero_voirie, 
-           p.nature_voie, p.nom_voie, p.contenance, pr.siren, pr.forme_juridique_abregee, pr.denomination
-    FROM parcelles AS p
-    JOIN propriete_historique AS ph ON p.parcelle_id = ph.parcelle_id
-    JOIN proprietaires AS pr ON ph.proprietaire_id = pr.proprietaire_id
-    WHERE ph.annee = ? AND pr.siren IN ({siren_placeholders})
-    '''
+        SELECT p.departement, p.code_commune, p.nom_commune, p.section, p.numero_plan, p.numero_voirie, 
+               p.nature_voie, p.nom_voie, p.contenance, pr.siren, pr.forme_juridique_abregee, pr.denomination
+        FROM parcelles AS p
+        JOIN propriete_historique AS ph ON p.parcelle_id = ph.parcelle_id
+        JOIN proprietaires AS pr ON ph.proprietaire_id = pr.proprietaire_id
+        WHERE ph.annee = ? AND pr.siren IN ({siren_placeholders})
+        '''
     cursor.execute(query, [year] + sirens)
     rows = cursor.fetchall()
 
-    # Noms des colonnes basés sur la requête SQL
-    column_names = ['Département', 'Commune', 'Section', 'N° plan', 'N° voirie',
-                    'Nature voie', 'Nom voie', 'Contenance', 'SIREN', 'Forme jur.', 'Dénomination']
-    return rows, column_names
+    # Ajout de la colonne 'DVF Link'
+    enhanced_rows = []
+    for row in rows:
+        departement, code_commune, *rest = row
+        code_parcelle = f"{int(departement):02}{int(code_commune):03}{rest[1]:0>5}{rest[2]:0>4}"
+        dvf_link = f"https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code={code_parcelle}"
+        enhanced_rows.append(row + (dvf_link,))
 
+    column_names = ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie',
+                    'Nature voie', 'Nom voie', 'Contenance', 'SIREN', 'Forme jur.', 'Dénomination', 'DVF Link']
+    return enhanced_rows, column_names
 
 
 def properties_and_history(conn, sirens):
@@ -60,29 +66,33 @@ def properties_and_history(conn, sirens):
         row = []
         for year in years:
             cursor.execute('''
-                SELECT pr.siren, pr.forme_juridique_abregee, pr.denomination
-                FROM propriete_historique AS ph
-                JOIN proprietaires AS pr ON ph.proprietaire_id = pr.proprietaire_id
-                WHERE ph.parcelle_id = ? AND ph.annee = ?
-            ''', (parcelle_id, year))
+                    SELECT pr.siren, pr.forme_juridique_abregee, pr.denomination
+                    FROM propriete_historique AS ph
+                    JOIN proprietaires AS pr ON ph.proprietaire_id = pr.proprietaire_id
+                    WHERE ph.parcelle_id = ? AND ph.annee = ?
+                ''', (parcelle_id, year))
             info = cursor.fetchone() or ("", "", "")
             row.extend(info)
 
-        # Préfixer la ligne avec des informations de base de la parcelle si nécessaire
         cursor.execute('''
-            SELECT departement, nom_commune, section, numero_plan, numero_voirie, 
-                   nature_voie, nom_voie, contenance
-            FROM parcelles
-            WHERE parcelle_id = ?
-        ''', (parcelle_id,))
+                SELECT departement, code_commune, nom_commune, section, numero_plan, numero_voirie, 
+                       nature_voie, nom_voie, contenance
+                FROM parcelles
+                WHERE parcelle_id = ?
+            ''', (parcelle_id,))
         base_info = cursor.fetchone()
-        properties_data.append(base_info + tuple(row))
 
-    # Préparation des entêtes
-    base_columns = ['Département', 'Commune', 'Section', 'N° plan', 'N° voirie', 'Nature voie', 'Nom voie',
+        # Build DVF link
+        departement, code_commune, section, numero_plan = base_info[:4]
+        code_parcelle = f"{int(departement):02}{int(code_commune):03}{section:0>5}{numero_plan:0>4}"
+        dvf_link = f"https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code={code_parcelle}"
+        properties_data.append(base_info + tuple(row) + (dvf_link,))
+
+    base_columns = ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie', 'Nature voie',
+                    'Nom voie',
                     'Contenance']
     dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
-    column_names = base_columns + dynamic_columns
+    column_names = base_columns + dynamic_columns + ['DVF Link']
 
     return properties_data, column_names
 
@@ -114,45 +124,47 @@ def past_properties(conn, sirens):
 
     past_parcelle_ids = all_parcelle_ids - recent_parcelle_ids
 
-    # Récupérer toutes les années concernées par les parcelles identifiées
-    if past_parcelle_ids:
-        cursor.execute('''
-            SELECT DISTINCT annee FROM propriete_historique
-            WHERE parcelle_id IN ({})
-            ORDER BY annee
-        '''.format(', '.join(['?']*len(past_parcelle_ids))), tuple(past_parcelle_ids))
-        years = [row[0] for row in cursor.fetchall()]
+    if not past_parcelle_ids:
+        return [], ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie', 'Nature voie', 'Nom voie', 'Contenance', 'DVF Link']
 
-        properties_data = []
-        for parcelle_id in past_parcelle_ids:
-            row = []
-            for year in years:
-                cursor.execute('''
-                    SELECT pr.siren, pr.forme_juridique_abregee, pr.denomination
-                    FROM propriete_historique AS ph
-                    JOIN proprietaires AS pr ON ph.proprietaire_id = pr.proprietaire_id
-                    WHERE ph.parcelle_id = ? AND ph.annee = ?
-                ''', (parcelle_id, year))
-                info = cursor.fetchone() or ("", "", "")
-                row.extend(info)
+    cursor.execute('''
+        SELECT DISTINCT annee FROM propriete_historique
+        WHERE parcelle_id IN ({})
+        ORDER BY annee DESC
+    '''.format(', '.join(['?']*len(past_parcelle_ids))), tuple(past_parcelle_ids))
+    years = [row[0] for row in cursor.fetchall()]
 
+    properties_data = []
+    for parcelle_id in past_parcelle_ids:
+        row = []
+        for year in years:
             cursor.execute('''
-                SELECT departement, nom_commune, section, numero_plan, numero_voirie, 
-                       nature_voie, nom_voie, contenance
-                FROM parcelles
-                WHERE parcelle_id = ?
-            ''', (parcelle_id,))
-            base_info = cursor.fetchone()
-            properties_data.append(base_info + tuple(row))
+                SELECT pr.siren, pr.forme_juridique_abregee, pr.denomination
+                FROM propriete_historique AS ph
+                JOIN proprietaires AS pr ON ph.proprietaire_id = pr.proprietaire_id
+                WHERE ph.parcelle_id = ? AND ph.annee = ?
+            ''', (parcelle_id, year))
+            info = cursor.fetchone() or ("", "", "")
+            row.extend(info)
 
-        # Préparation des entêtes
-        base_columns = ['Département', 'Commune', 'Section', 'N° plan', 'N° voirie', 'Nature voie', 'Nom voie', 'Contenance']
-        dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
-        column_names = base_columns + dynamic_columns
+        cursor.execute('''
+            SELECT departement, code_commune, nom_commune, section, numero_plan, numero_voirie, 
+                   nature_voie, nom_voie, contenance
+            FROM parcelles
+            WHERE parcelle_id = ?
+        ''', (parcelle_id,))
+        base_info = cursor.fetchone()
 
-        return properties_data, column_names
-    else:
-        return "Aucune donnée historique disponible pour les SIREN spécifiés"
+        # Build DVF link
+        departement, code_commune, section, numero_plan = base_info[:4]
+        code_parcelle = f"{int(departement):02}{int(code_commune):03}{section:0>5}{numero_plan:0>4}"
+        dvf_link = f"https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code={code_parcelle}"
+        properties_data.append(base_info + tuple(row) + (dvf_link,))
+
+    dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
+    column_names = ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie', 'Nature voie', 'Nom voie', 'Contenance'] + dynamic_columns + ['DVF Link']
+
+    return properties_data, column_names
 
 
 def properties_to_csv(properties, column_names, filename):
