@@ -16,7 +16,7 @@ def build_dvf_link(departement, code_commune, section, numero_plan):
     Returns:
     str: URL complète du lien DVF.
     """
-    code_parcelle = f"{int(departement):02}{int(code_commune):03}{section:0>5}{numero_plan:0>4}"
+    code_parcelle = f"{departement:0>2}{code_commune:0>3}{section:0>5}{numero_plan:0>4}"
     return f"https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code={code_parcelle}"
 
 
