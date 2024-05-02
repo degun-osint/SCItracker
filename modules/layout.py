@@ -5,22 +5,33 @@ from colorama import Fore, Style
 
 def display_menu():
     """Affiche le menu principal."""
-    title = "  👀 SCITracker  🕵️‍"
-    # Création d'une bordure autour du titre
-    border = "+" + "-" * (len(title) + 2) + "+"
-    print(Fore.CYAN + border + Style.RESET_ALL)
-    print(Fore.CYAN + f"{title}" + Style.RESET_ALL)
-    print(Fore.CYAN + border + Style.RESET_ALL + "\n")
+    title = """
 
-    print(Fore.YELLOW + "### Menu Principal ###" + Style.RESET_ALL)
-    print(Fore.BLUE + "init -" + Fore.BLUE + " Créer/mettre à jour la base de données 🔄")
+███████╗ ██████╗██╗████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗ 
+██╔════╝██╔════╝██║╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+███████╗██║     ██║   ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝
+╚════██║██║     ██║   ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+███████║╚██████╗██║   ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
+╚══════╝ ╚═════╝╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ v2.0
+            ### Trouvez les parcelles et locaux via SIREN ###                                                                      
+    """
+    titre_menu = """
+ +-+-+-+-+-+-+-+-+-+
+ | Menu  Principal |
+ +-+-+-+-+-+-+-+-+-+
+    """
+    # Création d'une bordure autour du titre
+    print(Fore.CYAN + f"{title}" + Style.RESET_ALL)
+
+    print(Fore.YELLOW + titre_menu + Style.RESET_ALL)
+    print(Fore.BLUE + "# init -" + Fore.BLUE + " Créer/mettre à jour la base de données 🔄")
     print(
-        Fore.GREEN + "1 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (année la plus récente) 🔍")
+        Fore.GREEN + "# 1 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (année la plus récente) 🔍")
     print(
-        Fore.GREEN + "2 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (avec historique) 📚")
+        Fore.GREEN + "# 2 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (avec historique) 📚")
     print(
-        Fore.GREEN + "3 -" + Fore.WHITE + " Rechercher toutes les anciennes propriétés d'un SIREN 🏠")
-    print(Fore.RED + "q - Quitter ❌" + Style.RESET_ALL)
+        Fore.GREEN + "# 3 -" + Fore.WHITE + " Rechercher toutes les anciennes propriétés d'un SIREN 🏠")
+    print(Fore.RED + "# q - Quitter ❌" + Style.RESET_ALL)
 
 
 def searching(stop_event):
