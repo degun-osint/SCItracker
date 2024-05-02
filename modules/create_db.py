@@ -34,6 +34,27 @@ def create_database():
         UNIQUE(departement, code_commune, section, numero_plan)
     )
     ''')
+    # Création table locaux
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS locaux (
+        locaux_id INTEGER PRIMARY KEY,
+        departement TEXT,
+        code_commune TEXT,
+        prefixe TEXT,
+        section TEXT,
+        numero_plan TEXT,
+        batiment TEXT,
+        entree TEXT,
+        niveau TEXT,
+        porte TEXT,
+        nom_commune TEXT,
+        numero_voirie TEXT,
+        indice_repetition TEXT,
+        nature_voie TEXT,
+        nom_voie TEXT,
+        UNIQUE(departement, code_commune, prefixe, section, numero_plan, batiment, entree, niveau, porte)
+        )
+        ''')
 
     # Création de la table 'propriete_historique'
     cursor.execute('''
@@ -54,11 +75,27 @@ def create_database():
     )
     ''')
 
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS locaux_historique (
+    locaux_historique_id INTEGER PRIMARY KEY,
+    locaux_id INTEGER NOT NULL,
+    proprietaire_id INTEGER NOT NULL,
+    annee TEXT,
+    FOREIGN KEY (locaux_id) REFERENCES locaux (locaux_id),
+    FOREIGN KEY (proprietaire_id) REFERENCES proprietaires (proprietaire_id)
+    )
+    ''')
+
     # Création d'index pour accélérer les requêtes
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_siren ON proprietaires(siren)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_parcelle_id ON propriete_historique(parcelle_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_proprietaire_id ON propriete_historique(proprietaire_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_annee ON propriete_historique(annee)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_locaux_id ON locaux_historique(locaux_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_locaux_annee ON locaux_historique(annee)')
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_locaux_id_annee ON locaux_historique(locaux_id, annee)
+    ''')
 
     # Valider (commit) les changements et fermer la connexion à la base de données
     conn.commit()

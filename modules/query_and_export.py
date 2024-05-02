@@ -20,7 +20,6 @@ def build_dvf_link(departement, code_commune, section, numero_plan):
     return f"https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code={code_parcelle}"
 
 
-
 def get_most_recent_year(conn):
     cursor = conn.cursor()
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
@@ -50,6 +49,34 @@ def properties_simple(conn, sirens):
 
     column_names = ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie',
                     'Nature voie', 'Nom voie', 'Contenance', 'SIREN', 'Forme jur.', 'Dénomination', 'DVF Link']
+    return enhanced_rows, column_names
+
+
+def properties_simple_locaux(conn, sirens):
+    year = get_most_recent_year(conn)  # Assurez-vous que cette fonction renvoie l'année la plus récente pertinente
+    cursor = conn.cursor()
+    siren_placeholders = ', '.join(['?'] * len(sirens))
+    query = f'''
+        SELECT l.departement, l.code_commune, l.nom_commune, l.section, l.numero_plan, l.batiment, 
+               l.entree, l.niveau, l.porte, l.numero_voirie, l.indice_repetition, 
+               l.nature_voie, l.nom_voie, pr.siren, pr.forme_juridique_abregee, pr.denomination
+        FROM locaux AS l
+        JOIN locaux_historique AS lh ON l.locaux_id = lh.locaux_id
+        JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
+        WHERE lh.annee = ? AND pr.siren IN ({siren_placeholders})
+        '''
+    cursor.execute(query, [year] + sirens)
+    rows = cursor.fetchall()
+
+    enhanced_rows = []
+    for row in rows:
+        departement, code_commune, section, numero_plan = row[0], row[1], row[3], row[4]
+        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        enhanced_rows.append(row + (dvf_link,))
+
+    column_names = ['Département', 'Code Commune', 'Nom Commune', 'Section', 'N° plan', 'Bâtiment',
+                    'Entrée', 'Niveau', 'Porte', 'N° voirie', 'Indice de Répétition',
+                    'Nature Voie', 'Nom Voie', 'SIREN', 'Forme jur.', 'Dénomination', 'DVF Link']
     return enhanced_rows, column_names
 
 
@@ -101,6 +128,58 @@ def properties_and_history(conn, sirens):
     dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
     column_names = ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie', 'Nature voie',
                     'Nom voie', 'Contenance'] + dynamic_columns + ['DVF Link']
+
+    return properties_data, column_names
+
+
+def properties_and_history_locaux(conn, sirens):
+    cursor = conn.cursor()
+    cursor.execute('SELECT MAX(annee) FROM locaux_historique')
+    max_year = cursor.fetchone()[0]
+
+    siren_placeholders = ', '.join(['?'] * len(sirens))
+    cursor.execute(f'''
+        SELECT DISTINCT lh.locaux_id
+        FROM locaux_historique AS lh
+        JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
+        WHERE lh.annee = {max_year} AND pr.siren IN ({siren_placeholders})
+    ''', sirens)
+    locaux_ids = [row[0] for row in cursor.fetchall()]
+
+    cursor.execute('''
+        SELECT DISTINCT annee FROM locaux_historique
+        WHERE locaux_id IN ({})
+        ORDER BY annee
+    '''.format(', '.join(['?'] * len(locaux_ids))), locaux_ids)
+    years = [row[0] for row in cursor.fetchall()]
+
+    properties_data = []
+    for locaux_id in locaux_ids:
+        cursor.execute('''
+            SELECT departement, code_commune, nom_commune, section, numero_plan, batiment, entree, 
+                   niveau, porte, numero_voirie, indice_repetition, nature_voie, nom_voie
+            FROM locaux
+            WHERE locaux_id = ?
+        ''', (locaux_id,))
+        base_info = cursor.fetchone()
+        row = []
+        for year in years:
+            cursor.execute('''
+                SELECT pr.siren, pr.forme_juridique_abregee, pr.denomination
+                FROM locaux_historique AS lh
+                JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
+                WHERE lh.locaux_id = ? AND lh.annee = ?
+            ''', (locaux_id, year))
+            info = cursor.fetchone() or ("", "", "")
+            row.extend(info)
+
+        departement, code_commune, section, numero_plan = base_info[0], base_info[1], base_info[3], base_info[4]
+        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        properties_data.append(base_info + tuple(row) + (dvf_link,))
+
+    dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
+    column_names = ['Département', 'Code Commune', 'Nom Commune', 'Section', 'N° plan', 'Bâtiment', 'Entrée', 'Niveau', 'Porte',
+                    'N° voirie', 'Indice de Répétition', 'Nature Voie', 'Nom Voie'] + dynamic_columns + ['DVF Link']
 
     return properties_data, column_names
 
@@ -170,6 +249,75 @@ def past_properties(conn, sirens):
     dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
     column_names = ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie', 'Nature voie',
                     'Nom voie', 'Contenance'] + dynamic_columns + ['DVF Link']
+
+    return properties_data, column_names
+
+
+def past_properties_locaux(conn, sirens):
+    cursor = conn.cursor()
+    # Trouver l'année la plus récente dans la base de données pour les locaux
+    cursor.execute('SELECT MAX(annee) FROM locaux_historique')
+    max_year = cursor.fetchone()[0]
+
+    # Identifier les locaux associés aux SIREN donnés dans les années précédentes
+    siren_placeholders = ', '.join(['?'] * len(sirens))
+    cursor.execute(f'''
+        SELECT DISTINCT lh.locaux_id
+        FROM locaux_historique AS lh
+        JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
+        WHERE pr.siren IN ({siren_placeholders})
+    ''', sirens)
+    all_locaux_ids = {row[0] for row in cursor.fetchall()}
+
+    # Exclure les locaux où le SIREN est propriétaire dans l'année la plus récente
+    cursor.execute(f'''
+        SELECT DISTINCT lh.locaux_id
+        FROM locaux_historique AS lh
+        JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
+        WHERE lh.annee = {max_year} AND pr.siren IN ({siren_placeholders})
+    ''', sirens)
+    recent_locaux_ids = {row[0] for row in cursor.fetchall()}
+
+    past_locaux_ids = all_locaux_ids - recent_locaux_ids
+
+    if not past_locaux_ids:
+        return [], ['Département', 'Code Commune', 'Nom Commune', 'Section', 'N° plan', 'Bâtiment', 'Entrée', 'Niveau', 'Porte',
+                    'N° voirie', 'Indice de Répétition', 'Nature Voie', 'Nom Voie', 'DVF Link']
+
+    cursor.execute('''
+        SELECT DISTINCT annee FROM locaux_historique
+        WHERE locaux_id IN ({})
+        ORDER BY annee DESC
+    '''.format(', '.join(['?'] * len(past_locaux_ids))), tuple(past_locaux_ids))
+    years = [row[0] for row in cursor.fetchall()]
+
+    properties_data = []
+    for locaux_id in past_locaux_ids:
+        cursor.execute('''
+            SELECT departement, code_commune, nom_commune, section, numero_plan, batiment, entree, 
+                   niveau, porte, numero_voirie, indice_repetition, nature_voie, nom_voie
+            FROM locaux
+            WHERE locaux_id = ?
+        ''', (locaux_id,))
+        base_info = cursor.fetchone()
+        row = []
+        for year in years:
+            cursor.execute('''
+                SELECT pr.siren, pr.forme_juridique_abregee, pr.denomination
+                FROM locaux_historique AS lh
+                JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
+                WHERE lh.locaux_id = ? AND lh.annee = ?
+            ''', (locaux_id, year))
+            info = cursor.fetchone() or ("", "", "")
+            row.extend(info)
+
+        departement, code_commune, section, numero_plan = base_info[0], base_info[1], base_info[3], base_info[4]
+        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        properties_data.append(base_info + tuple(row) + (dvf_link,))
+
+    dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
+    column_names = ['Département', 'Code Commune', 'Nom Commune', 'Section', 'N° plan', 'Bâtiment', 'Entrée', 'Niveau', 'Porte',
+                    'N° voirie', 'Indice de Répétition', 'Nature Voie', 'Nom Voie'] + dynamic_columns + ['DVF Link']
 
     return properties_data, column_names
 

@@ -12,15 +12,15 @@ def display_menu():
     print(Fore.CYAN + f"{title}" + Style.RESET_ALL)
     print(Fore.CYAN + border + Style.RESET_ALL + "\n")
 
-    print(Fore.YELLOW + "Menu Principal" + Style.RESET_ALL)
-    print(Fore.GREEN + "1 -" + Fore.WHITE + " Créer/mettre à jour la base de données 🔄")
+    print(Fore.YELLOW + "### Menu Principal ###" + Style.RESET_ALL)
+    print(Fore.BLUE + "init -" + Fore.BLUE + " Créer/mettre à jour la base de données 🔄")
     print(
-        Fore.GREEN + "2 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (année la plus récente) 🔍")
+        Fore.GREEN + "1 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (année la plus récente) 🔍")
     print(
-        Fore.GREEN + "3 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (avec historique) 📚")
+        Fore.GREEN + "2 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (avec historique) 📚")
     print(
-        Fore.GREEN + "4 -" + Fore.WHITE + " Rechercher toutes les anciennes propriétés d'un SIREN 🏠")
-    print(Fore.RED + "5 - Quitter ❌" + Style.RESET_ALL)
+        Fore.GREEN + "3 -" + Fore.WHITE + " Rechercher toutes les anciennes propriétés d'un SIREN 🏠")
+    print(Fore.RED + "q - Quitter ❌" + Style.RESET_ALL)
 
 
 def searching(stop_event):
