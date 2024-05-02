@@ -1,4 +1,5 @@
 /scitracker/
+.idea
 /cadastral_data.db
 /scitracker.py
 /DATA_PARCELLES/2019/
