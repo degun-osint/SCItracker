@@ -1,4 +1,12 @@
-# SCITRACKER
+```
+███████╗ ██████╗██╗████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗ 
+██╔════╝██╔════╝██║╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+███████╗██║     ██║   ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝
+╚════██║██║     ██║   ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+███████║╚██████╗██║   ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
+╚══════╝ ╚═════╝╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ v2.0
+            ### Trouvez les parcelles et locaux via SIREN ###  
+```
 Ce script vous permet de rechercher des parcelles appartenant à des personnes morales via le numéro SIREN.
 Ce guide fournit des instructions détaillées sur la manière de configurer et d'utiliser l'application de gestion des données cadastrales pour les parcelles et les locaux des personnes morales.
 
@@ -51,7 +59,7 @@ Après avoir configuré les données, vous pouvez lancer l'application. Assurez-
 ``python3 scitracker2.py``
 
 ### Premier lancement
-Pour initialiser la base de données, entrez `ìnit` dans le menu principal.
+Pour initialiser la base de données, entrez `init` dans le menu principal.
 Selon le nombre d'années a insérer, il faudra patienter un "petit" moment le temps de construire la base.
 En cas de mise à jour, relancez l'initialisation pour ajouter les nouveaux fichiers.
 
