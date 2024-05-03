@@ -16,10 +16,10 @@ def import_data(data_directory, local_data_directory):
     cursor.execute('BEGIN TRANSACTION')
 
     # Traitement des parcelles
-    process_directory(data_directory, conn, process_parcelle_file)
+    process_directory(data_directory, conn, process_parcelle)
 
     # Traitement des locaux
-    process_directory(local_data_directory, conn, process_local_file)
+    process_directory(local_data_directory, conn, process_local)
 
     conn.commit()
     conn.close()
@@ -47,7 +47,7 @@ def process_directory(directory, conn, file_processor):
                     pbar.update(1)
 
 
-def process_parcelle_file(full_path, year, conn):
+def process_parcelle(full_path, year, conn):
     cursor = conn.cursor()
     with open(full_path, 'r', encoding='iso-8859-1') as data_file:
         csv_reader = csv.reader(data_file, delimiter=';')
@@ -88,7 +88,7 @@ def process_parcelle_file(full_path, year, conn):
                 ''', (parcelle_id, proprietaire_id, year))
 
 
-def process_local_file(full_path, year, conn):
+def process_local(full_path, year, conn):
     cursor = conn.cursor()
     with open(full_path, 'r', encoding='iso-8859-1') as data_file:
         csv_reader = csv.reader(data_file, delimiter=';')

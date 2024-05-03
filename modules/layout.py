@@ -16,9 +16,9 @@ def display_menu():
             ### Trouvez les parcelles et locaux via SIREN ###                                                                      
     """
     titre_menu = """
- +-+-+-+-+-+-+-+-+-+
- | Menu  Principal |
- +-+-+-+-+-+-+-+-+-+
+ +-+-+-+-+-+-+-+-+-+-+-+
+ | 🤖Menu  Principal 🤖|
+ +-+-+-+-+-+-+-+-+-+-+-+
     """
     # Création d'une bordure autour du titre
     print(Fore.CYAN + f"{title}" + Style.RESET_ALL)
@@ -26,9 +26,9 @@ def display_menu():
     print(Fore.YELLOW + titre_menu + Style.RESET_ALL)
     print(Fore.BLUE + "# init -" + Fore.BLUE + " Créer/mettre à jour la base de données 🔄")
     print(
-        Fore.GREEN + "# 1 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (année la plus récente) 🔍")
+        Fore.GREEN + "# 1 -" + Fore.WHITE + " Rechercher des propriétés appartenant à un ou plusieurs SIREN (année la plus récente) 🔍")
     print(
-        Fore.GREEN + "# 2 -" + Fore.WHITE + " Rechercher des parcelles appartenant à un ou plusieurs SIREN (avec historique) 📚")
+        Fore.GREEN + "# 2 -" + Fore.WHITE + " Rechercher des propriétés appartenant à un ou plusieurs SIREN (avec historique) 📚")
     print(
         Fore.GREEN + "# 3 -" + Fore.WHITE + " Rechercher toutes les anciennes propriétés d'un SIREN 🏠")
     print(Fore.RED + "# q - Quitter ❌" + Style.RESET_ALL)

@@ -3,30 +3,41 @@
 import csv
 
 
-def build_dvf_link(departement, code_commune, section, numero_plan):
+def build_dvf(departement, code_commune, section, numero_plan):
     """
-    Construit un lien DVF pour la parcelle spécifiée.
+    Builds a DVF link for the specified parcel.
 
     Args:
-    departement (str): Code du département, doit être de 2 chiffres.
-    code_commune (str): Code de la commune, doit être de 3 chiffres.
-    section (str): Code de la section, doit être ajusté à 5 caractères avec des zéros initiaux si nécessaire.
-    numero_plan (str): Numéro du plan, doit être ajusté à 4 caractères avec des zéros initiaux si nécessaire.
+    departement (str): Department code, must be 2 digits long.
+    code_commune (str): Commune code, must be 3 digits long.
+    section (str): Section code, must be adjusted to 5 characters with leading zeros if necessary.
+    plan_number (str): Plan number, must be adjusted to 4 characters with leading zeros if necessary.
 
     Returns:
-    str: URL complète du lien DVF.
+    str: Full URL of the DVF link.
     """
     code_parcelle = f"{departement:0>2}{code_commune:0>3}{section:0>5}{numero_plan:0>4}"
     return f"https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code={code_parcelle}"
 
 
 def get_most_recent_year(conn):
+    """
+    Get the most recent year added to the database
+    :param conn: database connexion
+    :return: int : most recent year
+    """
     cursor = conn.cursor()
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
     return cursor.fetchone()[0]
 
 
-def properties_simple(conn, sirens):
+def parcelles_simple(conn, sirens):
+    """
+    Get all cadatral plot owned by one or more SIREN number
+    :param conn: database connection
+    :param sirens: list of SIREN number input by user
+    :return: table with columns for plot owned.
+    """
     year = get_most_recent_year(conn)
     cursor = conn.cursor()
     siren_placeholders = ', '.join(['?'] * len(sirens))
@@ -44,7 +55,7 @@ def properties_simple(conn, sirens):
     enhanced_rows = []
     for row in rows:
         departement, code_commune, section, numero_plan = row[0], row[1], row[3], row[4]
-        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        dvf_link = build_dvf(departement, code_commune, section, numero_plan)
         enhanced_rows.append(row + (dvf_link,))
 
     column_names = ['Département', 'Code Commune', 'Commune', 'Section', 'N° plan', 'N° voirie',
@@ -52,7 +63,13 @@ def properties_simple(conn, sirens):
     return enhanced_rows, column_names
 
 
-def properties_simple_locaux(conn, sirens):
+def locaux_simple(conn, sirens):
+    """
+        Get all lot owned by one or more SIREN number
+        :param conn: database connection
+        :param sirens: list of SIREN number input by user
+        :return: table with columns for lot owned.
+        """
     year = get_most_recent_year(conn)  # Assurez-vous que cette fonction renvoie l'année la plus récente pertinente
     cursor = conn.cursor()
     siren_placeholders = ', '.join(['?'] * len(sirens))
@@ -71,7 +88,7 @@ def properties_simple_locaux(conn, sirens):
     enhanced_rows = []
     for row in rows:
         departement, code_commune, section, numero_plan = row[0], row[1], row[3], row[4]
-        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        dvf_link = build_dvf(departement, code_commune, section, numero_plan)
         enhanced_rows.append(row + (dvf_link,))
 
     column_names = ['Département', 'Code Commune', 'Nom Commune', 'Section', 'N° plan', 'Bâtiment',
@@ -80,7 +97,13 @@ def properties_simple_locaux(conn, sirens):
     return enhanced_rows, column_names
 
 
-def properties_and_history(conn, sirens):
+def parcelles_history(conn, sirens):
+    """
+        Get all cadatral plot owned by one or more SIREN number, with previous owner history
+        :param conn: database connection
+        :param sirens: list of SIREN number input by user
+        :return: table with columns for plot owned.
+        """
     cursor = conn.cursor()
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
     max_year = cursor.fetchone()[0]
@@ -122,7 +145,7 @@ def properties_and_history(conn, sirens):
             row.extend(info)
 
         departement, code_commune, section, numero_plan = base_info[0], base_info[1], base_info[3], base_info[4]
-        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        dvf_link = build_dvf(departement, code_commune, section, numero_plan)
         properties_data.append(base_info + tuple(row) + (dvf_link,))
 
     dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
@@ -132,7 +155,13 @@ def properties_and_history(conn, sirens):
     return properties_data, column_names
 
 
-def properties_and_history_locaux(conn, sirens):
+def locaux_history(conn, sirens):
+    """
+    Get all cadatral lot owned by one or more SIREN number, with previous owner history
+    :param conn: database connection
+    :param sirens: list of SIREN number input by user
+    :return: table with columns for lot owned.
+    """
     cursor = conn.cursor()
     cursor.execute('SELECT MAX(annee) FROM locaux_historique')
     max_year = cursor.fetchone()[0]
@@ -174,7 +203,7 @@ def properties_and_history_locaux(conn, sirens):
             row.extend(info)
 
         departement, code_commune, section, numero_plan = base_info[0], base_info[1], base_info[3], base_info[4]
-        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        dvf_link = build_dvf(departement, code_commune, section, numero_plan)
         properties_data.append(base_info + tuple(row) + (dvf_link,))
 
     dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
@@ -184,7 +213,13 @@ def properties_and_history_locaux(conn, sirens):
     return properties_data, column_names
 
 
-def past_properties(conn, sirens):
+def past_parcelles(conn, sirens):
+    """
+    Get all cadatral plot previously owned by one or more SIREN number, with previous owner history
+    :param conn: database connection
+    :param sirens: list of SIREN number input by user
+    :return: table with columns for plot owned.
+    """
     cursor = conn.cursor()
     # Trouver l'année la plus récente dans la base de données
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
@@ -243,7 +278,7 @@ def past_properties(conn, sirens):
             row.extend(info)
 
         departement, code_commune, section, numero_plan = base_info[0], base_info[1], base_info[3], base_info[4]
-        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        dvf_link = build_dvf(departement, code_commune, section, numero_plan)
         properties_data.append(base_info + tuple(row) + (dvf_link,))
 
     dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
@@ -253,7 +288,13 @@ def past_properties(conn, sirens):
     return properties_data, column_names
 
 
-def past_properties_locaux(conn, sirens):
+def past_locaux(conn, sirens):
+    """
+    Get all cadatral plot previously owned by one or more SIREN number, with previous owner history
+    :param conn: database connection
+    :param sirens: list of SIREN number input by user
+    :return: table with columns for plot owned.
+    """
     cursor = conn.cursor()
     # Trouver l'année la plus récente dans la base de données pour les locaux
     cursor.execute('SELECT MAX(annee) FROM locaux_historique')
@@ -312,7 +353,7 @@ def past_properties_locaux(conn, sirens):
             row.extend(info)
 
         departement, code_commune, section, numero_plan = base_info[0], base_info[1], base_info[3], base_info[4]
-        dvf_link = build_dvf_link(departement, code_commune, section, numero_plan)
+        dvf_link = build_dvf(departement, code_commune, section, numero_plan)
         properties_data.append(base_info + tuple(row) + (dvf_link,))
 
     dynamic_columns = [f'{item} [{year}]' for year in years for item in ('SIREN', 'Forme jur.', 'Dénomination')]
@@ -322,7 +363,10 @@ def past_properties_locaux(conn, sirens):
     return properties_data, column_names
 
 
-def properties_to_csv(properties, column_names, filename):
+def export_to_csv(properties, column_names, filename):
+    """
+    Export result to csv.
+    """
     with open(filename, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(column_names)
