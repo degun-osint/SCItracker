@@ -2,42 +2,19 @@
 
 import csv
 
-
+# Construit le lien vers le DVF
 def build_dvf(departement, code_commune, section, numero_plan):
-    """
-    Builds a DVF link for the specified parcel.
-
-    Args:
-    departement (str): Department code, must be 2 digits long.
-    code_commune (str): Commune code, must be 3 digits long.
-    section (str): Section code, must be adjusted to 5 characters with leading zeros if necessary.
-    plan_number (str): Plan number, must be adjusted to 4 characters with leading zeros if necessary.
-
-    Returns:
-    str: Full URL of the DVF link.
-    """
     code_parcelle = f"{departement:0>2}{code_commune:0>3}{section:0>5}{numero_plan:0>4}"
     return f"https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code={code_parcelle}"
 
-
+# Calcule l'année la plus récent
 def get_most_recent_year(conn):
-    """
-    Get the most recent year added to the database
-    :param conn: database connexion
-    :return: int : most recent year
-    """
     cursor = conn.cursor()
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
     return cursor.fetchone()[0]
 
-
+# Recherche les parcelles actuellement possédée par un SIREN
 def parcelles_simple(conn, sirens):
-    """
-    Get all cadatral plot owned by one or more SIREN number
-    :param conn: database connection
-    :param sirens: list of SIREN number input by user
-    :return: table with columns for plot owned.
-    """
     year = get_most_recent_year(conn)
     cursor = conn.cursor()
     siren_placeholders = ', '.join(['?'] * len(sirens))
@@ -62,7 +39,7 @@ def parcelles_simple(conn, sirens):
                     'Nature voie', 'Nom voie', 'Contenance', 'SIREN', 'Forme jur.', 'Dénomination', 'DVF Link']
     return enhanced_rows, column_names
 
-
+# Recherche les locaux actuellement possédés par un SIREN
 def locaux_simple(conn, sirens):
     """
         Get all lot owned by one or more SIREN number
@@ -96,14 +73,8 @@ def locaux_simple(conn, sirens):
                     'Nature Voie', 'Nom Voie', 'SIREN', 'Forme jur.', 'Dénomination', 'DVF Link']
     return enhanced_rows, column_names
 
-
 def parcelles_history(conn, sirens):
-    """
-        Get all cadatral plot owned by one or more SIREN number, with previous owner history
-        :param conn: database connection
-        :param sirens: list of SIREN number input by user
-        :return: table with columns for plot owned.
-        """
+    # Recherche les parcelles possédées actuellement par un SIREN, et ressort les propriétaires des années précédentes
     cursor = conn.cursor()
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
     max_year = cursor.fetchone()[0]
@@ -156,12 +127,8 @@ def parcelles_history(conn, sirens):
 
 
 def locaux_history(conn, sirens):
-    """
-    Get all cadatral lot owned by one or more SIREN number, with previous owner history
-    :param conn: database connection
-    :param sirens: list of SIREN number input by user
-    :return: table with columns for lot owned.
-    """
+    # Recherche les locaux possédées actuellement par un SIREN, et ressort les propriétaires des années précédentes
+
     cursor = conn.cursor()
     cursor.execute('SELECT MAX(annee) FROM locaux_historique')
     max_year = cursor.fetchone()[0]
@@ -214,12 +181,8 @@ def locaux_history(conn, sirens):
 
 
 def past_parcelles(conn, sirens):
-    """
-    Get all cadatral plot previously owned by one or more SIREN number, with previous owner history
-    :param conn: database connection
-    :param sirens: list of SIREN number input by user
-    :return: table with columns for plot owned.
-    """
+    # Recherche les parcelles vendues par un SIREN, et ressort les propriétaires des années précédentes et le dernier propriétaire
+
     cursor = conn.cursor()
     # Trouver l'année la plus récente dans la base de données
     cursor.execute('SELECT MAX(annee) FROM propriete_historique')
@@ -289,12 +252,8 @@ def past_parcelles(conn, sirens):
 
 
 def past_locaux(conn, sirens):
-    """
-    Get all cadatral plot previously owned by one or more SIREN number, with previous owner history
-    :param conn: database connection
-    :param sirens: list of SIREN number input by user
-    :return: table with columns for plot owned.
-    """
+    # Recherche les locaux vendus par un SIREN, et ressort les propriétaires des années précédentes et le dernier propriétaire
+
     cursor = conn.cursor()
     # Trouver l'année la plus récente dans la base de données pour les locaux
     cursor.execute('SELECT MAX(annee) FROM locaux_historique')
@@ -364,9 +323,6 @@ def past_locaux(conn, sirens):
 
 
 def export_to_csv(properties, column_names, filename):
-    """
-    Export result to csv.
-    """
     with open(filename, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(column_names)
