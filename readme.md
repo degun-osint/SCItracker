@@ -18,6 +18,7 @@ Avant de commencer l'installation, assurez-vous que Python et SQLite sont instal
 
 1. **Cloner le dépôt** :
    Clonez ce dépôt sur votre machine locale en utilisant la commande suivante : `git clone <url_du_dépôt>`
+   Ou télécharger le zip ici : https://github.com/degun-osint/SCItracker/archive/refs/heads/main.zip
 2. **Installer les dépendances** :
 Installez toutes les dépendances requises pour le projet en exécutant `pip install -r requirements.txt`
 
