@@ -48,9 +48,9 @@ Par exemple, l'arborescence des fichiers pourrait ressembler à cela :
 │ ├── 2021
 │ └── 2022
 ├── DATA_PARCELLES
-├── 2020
-├── 2021
-└── 2022
+│ ├── 2020
+│ ├── 2021
+│ └── 2022
 ```
 
 
