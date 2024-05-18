@@ -78,11 +78,11 @@ def main():
         elif choice in ['1', '2', '3']:
             sirens = prompt_siren()
             with sqlite3.connect('cadastral_data.db') as conn:
-                if choice == '2':
+                if choice == '1':
                     display_export(conn, sirens, parcelles_simple, locaux_simple)
-                elif choice == '3':
+                elif choice == '2':
                     display_export(conn, sirens, parcelles_history, locaux_history)
-                elif choice == '4':
+                elif choice == '3':
                     display_export(conn, sirens, past_parcelles, past_locaux)
         elif choice == 'q':
             print(Fore.GREEN + "Au revoir !" + Style.RESET_ALL)
