@@ -138,8 +138,8 @@ def locaux_history(conn, sirens):
         SELECT DISTINCT lh.locaux_id
         FROM locaux_historique AS lh
         JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
-        WHERE lh.annee = {max_year} AND pr.siren IN ({siren_placeholders})
-    ''', sirens)
+        WHERE lh.annee = ? AND pr.siren IN ({siren_placeholders})
+    ''', (max_year, *sirens))
     locaux_ids = [row[0] for row in cursor.fetchall()]
 
     cursor.execute('''
@@ -252,14 +252,10 @@ def past_parcelles(conn, sirens):
 
 
 def past_locaux(conn, sirens):
-    # Recherche les locaux vendus par un SIREN, et ressort les propriétaires des années précédentes et le dernier propriétaire
-
     cursor = conn.cursor()
-    # Trouver l'année la plus récente dans la base de données pour les locaux
     cursor.execute('SELECT MAX(annee) FROM locaux_historique')
     max_year = cursor.fetchone()[0]
 
-    # Identifier les locaux associés aux SIREN donnés dans les années précédentes
     siren_placeholders = ', '.join(['?'] * len(sirens))
     cursor.execute(f'''
         SELECT DISTINCT lh.locaux_id
@@ -269,13 +265,12 @@ def past_locaux(conn, sirens):
     ''', sirens)
     all_locaux_ids = {row[0] for row in cursor.fetchall()}
 
-    # Exclure les locaux où le SIREN est propriétaire dans l'année la plus récente
     cursor.execute(f'''
         SELECT DISTINCT lh.locaux_id
         FROM locaux_historique AS lh
         JOIN proprietaires AS pr ON lh.proprietaire_id = pr.proprietaire_id
-        WHERE lh.annee = {max_year} AND pr.siren IN ({siren_placeholders})
-    ''', sirens)
+        WHERE lh.annee = ? AND pr.siren IN ({siren_placeholders})
+    ''', (max_year, *sirens))
     recent_locaux_ids = {row[0] for row in cursor.fetchall()}
 
     past_locaux_ids = all_locaux_ids - recent_locaux_ids
@@ -300,6 +295,8 @@ def past_locaux(conn, sirens):
             WHERE locaux_id = ?
         ''', (locaux_id,))
         base_info = cursor.fetchone()
+        if base_info is None:
+            continue  # Skip if no matching record found
         row = []
         for year in years:
             cursor.execute('''
@@ -320,6 +317,7 @@ def past_locaux(conn, sirens):
                     'N° voirie', 'Indice de Répétition', 'Nature Voie', 'Nom Voie'] + dynamic_columns + ['DVF Link']
 
     return properties_data, column_names
+
 
 
 def export_to_csv(properties, column_names, filename):
